@@ -10,8 +10,7 @@
 require 'xcodeproj'
 require 'colorize'
 
-def printGroup(groups, level)
-    #puts "-Processing level #{level}-"
+def printGroup(groups, level, isPrintChildren)
 
     # if the groups itself is nil so there's nothing, then return immediately
     if groups.nil?
@@ -27,11 +26,27 @@ def printGroup(groups, level)
             end
 
             # print group name
-            puts "#{val.display_name}"
+            print "#{val.display_name}"
+            puts "/".yellow
+
+            # print its children if needed
+            if isPrintChildren
+                unless val.children.objects.empty?
+                    val.children.objects.each do |child|
+                        # indent for child
+                        for l in 1..level+1
+                            print ". ".blue
+                        end
+
+                        # print child
+                        puts "#{child.display_name}"
+                    end
+                end
+            end
 
         # if it has children, then do it recursively
         #else
-            printGroup(val.groups, level + 1)
+            printGroup(val.groups, level + 1, isPrintChildren)
         #end
     end
     
@@ -49,4 +64,4 @@ project = Xcodeproj::Project.open(project_file)
 
 #dialogue_file = project.new_file('tutorial-1.zhd')
 
-printGroup(project.groups, 0)
+printGroup(project.groups, 0, false)
