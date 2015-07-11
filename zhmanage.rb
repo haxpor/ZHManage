@@ -53,6 +53,16 @@ def printGroup(groups, level, isPrintChildren)
     return nil
 end
 
+# Check if parameters supplied correctly and enough
+if ARGV.length != 1
+    puts "Usage: zhmanage <command>"
+    exit
+end
+
+# if all else is okay
+# Get command from executing command line
+command = ARGV[0];
+
 xcode_project_path = '/Users/haxpor/Data/Projects/ZombieHero/zombie-hero/'
 xcode_project_name = 'ZombieHero.xcodeproj'
 
@@ -62,6 +72,8 @@ puts "Processing #{project_file} ..."
 
 project = Xcodeproj::Project.open(project_file)
 
-#dialogue_file = project.new_file('tutorial-1.zhd')
-
-printGroup(project.groups, 0, false)
+if command == "listgroup"
+    printGroup(project.groups, 0, false)
+else
+    puts "#{command} command not recognized."
+end
