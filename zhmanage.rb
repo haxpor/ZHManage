@@ -54,14 +54,14 @@ def printGroup(groups, level, isPrintChildren)
 end
 
 # Check if parameters supplied correctly and enough
-if ARGV.length != 1
+if ARGV.length < 1
     puts "Usage: zhmanage <command>"
     exit
 end
 
 # if all else is okay
 # Get command from executing command line
-command = ARGV[0];
+command = ARGV[0]
 
 xcode_project_path = '/Users/haxpor/Data/Projects/ZombieHero/zombie-hero/'
 xcode_project_name = 'ZombieHero.xcodeproj'
@@ -72,8 +72,42 @@ puts "Processing #{project_file} ..."
 
 project = Xcodeproj::Project.open(project_file)
 
+#
+# zhmange listgroup
+# List all group under the project.
+#
 if command == "listgroup"
     printGroup(project.groups, 0, false)
+
+#
+# zhmanage addfile <file-path> <group-path>
+# Command to add a file from 'file-path' under the 'group-path'
+# Note: It's better and risk-free to go to the file folder then execute the command with 'file-path' as only a filename.
+#
+elsif command == "addfile"
+    # check if parameter is not enough
+    if ARGV.length < 2
+        puts "Usage: zhmanage addfile <file-path> <group-path>"
+        exit
+    end
+
+    # If okay, then gather each parameter
+    filePath = ARGV[1]
+    groupPath = ARGV[2]
+
+    # get the group of the path to add a new file
+    group = project[groupPath]
+    fileRef = group.new_reference(filePath)
+
+    if fileRef.nil?
+        # save the project
+        project.save
+        puts "Failed to add '#{fileRef.display_name}'"
+    else
+        # save the project
+        project.save
+        puts "Added '#{fileRef.display_name}' successfully."
+    end
 else
     puts "#{command} command not recognized."
 end
