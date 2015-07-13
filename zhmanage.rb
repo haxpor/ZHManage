@@ -99,14 +99,49 @@ elsif command == "addfile"
     group = project[groupPath]
     fileRef = group.new_reference(filePath)
 
-    if fileRef.nil?
+    if !fileRef.nil?
+        puts "Adding '#{fileRef.display_name}' ..."
+        puts " .Added under the group '#{group.display_name}' successfully."
+
+        # iterate through all the native-targets in order to build source file (no header file in this project)
+        project.native_targets.each do |native_target|
+            
+            # adding as part of the target build phase only
+            # if it's header file, we ignore it
+            extension = File.extname(fileRef.display_name).downcase
+            header_extensions = Xcodeproj::Constants::HEADER_FILES_EXTENSIONS
+            if !header_extensions.include?(extension)
+                puts "\tAdding as part of source-build-phase for '#{native_target.display_name}'" 
+
+                # get source build phase
+                source_build_phase = native_target.source_build_phase
+                # add file into source build phase
+                buildFile = source_build_phase.add_file_reference(fileRef, true)
+
+                if !buildFile.nil?
+                    # we're done
+                    puts "\t .Added as part of source-build-phase successfully."
+                else
+                    # we failed
+                    # thus we don't save project
+                    puts "\t .Failed to add as part of source-build-phase"
+
+                    # exit immediately
+                    exit
+                end
+            end
+        end
+
+        # all is okay, we are about to save
         # save the project
         project.save
-        puts "Failed to add '#{fileRef.display_name}'"
     else
-        # save the project
-        project.save
-        puts "Added '#{fileRef.display_name}' successfully."
+        # we failed
+        # thus we don't save the project
+        puts "Failed to add '#{filePath}"
+
+        # exit immediately
+        exit
     end
 else
     puts "#{command} command not recognized."
