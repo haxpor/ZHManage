@@ -63,6 +63,21 @@ end
 # Get command from executing command line
 command = ARGV[0]
 
+# (inject at this point in order to not load a project file)
+# (it's not clean solution at the moment, will fix it later. It works fine, and that's the point for now.)
+#
+# zhmanage help
+# Show the list of commands
+#
+if command == "help"
+    puts "zhmanage"
+    puts ""
+    puts "\tzhmanage listgroup                            - list all groups under the project"
+    puts "\tzhmanage addfile <file-path> <group-path>     - add a new file from specified path to a target group"
+    puts "\tzhmanage addgroup <name> <subpath>            - add a new group under the subpath group"
+    exit
+end
+
 xcode_project_path = '/Users/haxpor/Data/Projects/ZombieHero/zombie-hero/'
 xcode_project_name = 'ZombieHero.xcodeproj'
 
@@ -143,6 +158,41 @@ elsif command == "addfile"
         # exit immediately
         exit
     end
+
+#
+# zhmanage addgroup <name> <subpath>
+# Add a new group under the subpath of the main group.
+#
+elsif command == "addgroup"
+    # check if parameter is not enough
+    if ARGV.length < 2
+        puts "Usage: zhmanage addgroup <name> <subpath>"
+        exit
+    end
+
+    # get parameters
+    groupName = ARGV[1]
+    groupSubPath = ARGV[2]
+
+    # get the sub-group to add a new group to
+    parentGroup = project[groupSubPath]
+
+    if parentGroup.nil?
+        puts "Cannot find group '#{groupSubPath}'"
+        exit
+    end
+
+    # add a group under the subpath of the main group
+    result = parentGroup.new_group(groupName)
+    if result.nil?
+        puts "Failed to add '#{groupName}'"
+        exit
+    else
+        # save project
+        project.save
+
+        puts "Added a new group '#{groupName} under '#{groupSubPath}'"
+    end 
 else
     puts "#{command} command not recognized."
 end
