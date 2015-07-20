@@ -18,36 +18,31 @@ def printGroup(groups, level, isPrintChildren)
     end
 
     groups.each do |val|
-        # if its children is empty, then print
-        # if val.groups.empty?
-            # indent for children
-            for l in 1..level
-                print "| ".red
-            end
+        # indent for children
+        for l in 1..level
+            print "| ".red
+        end
 
-            # print group name
-            print "#{val.display_name}"
-            puts "/".yellow
+        # print group name
+        print "#{val.display_name}"
+        puts "/".yellow
 
-            # print its children if needed
-            if isPrintChildren
-                unless val.children.objects.empty?
-                    val.children.objects.each do |child|
-                        # indent for child
-                        for l in 1..level+1
-                            print ". ".blue
-                        end
-
-                        # print child
-                        puts "#{child.display_name}"
+        # print its children if needed
+        if isPrintChildren
+            unless val.children.objects.empty?
+                val.children.objects.each do |child|
+                    # indent for child
+                    for l in 1..level+1
+                        print ". ".blue
                     end
+
+                    # print child
+                    puts "#{child.display_name}"
                 end
             end
+        end
 
-        # if it has children, then do it recursively
-        #else
-            printGroup(val.groups, level + 1, isPrintChildren)
-        #end
+        printGroup(val.groups, level + 1, isPrintChildren)
     end
     
     return nil
