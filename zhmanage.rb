@@ -10,6 +10,8 @@
 require 'xcodeproj'
 require 'colorize'
 
+SOURCE_FILES_EXTENSIONS = %w(.c .cpp .m .mm).freeze
+
 def printGroup(groups, level, isPrintChildren)
 
     # if the groups itself is nil so there's nothing, then return immediately
@@ -46,12 +48,6 @@ def printGroup(groups, level, isPrintChildren)
     end
     
     return nil
-end
-
-# Check if parameters supplied correctly and enough
-if ARGV.length < 1
-    puts "Usage: zhmanage <command>"
-    exit
 end
 
 # if all else is okay
@@ -120,7 +116,8 @@ elsif command == "addfile"
             # if it's header file, we ignore it
             extension = File.extname(fileRef.display_name).downcase
             header_extensions = Xcodeproj::Constants::HEADER_FILES_EXTENSIONS
-            if !header_extensions.include?(extension)
+            source_extensions = SOURCE_FILES_EXTENSIONS
+            if !header_extensions.include?(extension) && source_extensions.include?(extension)
                 puts "\tAdding as part of source-build-phase for '#{native_target.display_name}'" 
 
                 # get source build phase
@@ -134,8 +131,29 @@ elsif command == "addfile"
                 else
                     # we failed
                     # thus we don't save project
-                    puts "\t .Failed to add as part of source-build-phase"
+                    puts "\t .Failed to add as part of source-build-phase."
 
+                    # exit immediately
+                    exit
+                end
+
+            # if not header, and source => it's resource file
+            elsif !header_extensions.include?(extension) && !source_extensions.include?(extension)
+                puts "\t Adding as part of resources-build-phase for '#{native_target.display_name}'"
+
+                # get resource build phase
+                resource_build_phase = native_target.resources_build_phase
+                # add file into resource build phase
+                buildFile = resource_build_phase.add_file_reference(fileRef, true)
+
+                if !buildFile.nil?
+                    # we're done
+                    puts "\t .Added as part of resources-build-phase successfully."
+                else
+                    # we failed
+                    # thus we don't save project
+                    puts "\t .Failed to add as part of resources-build-phase."
+                    
                     # exit immediately
                     exit
                 end
@@ -188,6 +206,87 @@ elsif command == "addgroup"
 
         puts "Added a new group '#{groupName} under '#{groupSubPath}'"
     end 
+
+#
+# zhmanage addToVariantGroup <filePath>
+# Add a target file to the variant group
+# Usually it will be Localizable.strings file.
+#
+elsif command == "addToVariantGroup"
+    # check if parameter if not enough
+    if ARGV.length < 2
+        puts "Usage: zhmanage addToVariantGroup <filePath>"
+        exit
+    end
+
+    # get paramters
+    filePath = ARGV[1]
+
+    # if objects is nil, or objects is empty then return immediately
+    if project.objects.nil? || project.objects.empty?
+        return nil
+    end
+
+    # find PBXVariantGroup 
+    project.objects.each do |obj|
+        if obj.kind_of? Xcodeproj::Project::Object::PBXVariantGroup
+            puts "Found"
+            
+            # just for convenience
+            vg = obj
+
+            # add target file to PBXVariantGroup
+            fileRef = vg.new_reference(filePath)           
+            
+            # if successfully added file under the group
+            if !fileRef.nil?
+                puts "Adding '#{fileRef.display_name}' ..."
+                puts " .Added under the group '#{vg.display_name}' successfully."
+
+                # iterate through all the native-targets in order to build source file (no header file in this project)
+                project.native_targets.each do |native_target|
+                    
+                    # adding as part of the target build phase only
+                    # if it's header file, we ignore it
+                    extension = File.extname(fileRef.display_name).downcase
+                    header_extensions = Xcodeproj::Constants::HEADER_FILES_EXTENSIONS
+                    if !header_extensions.include?(extension)
+                        puts "\tAdding as part of source-build-phase for '#{native_target.display_name}'" 
+
+                        # get source build phase
+                        source_build_phase = native_target.source_build_phase
+                        # add file into source build phase
+                        buildFile = source_build_phase.add_file_reference(fileRef, true)
+
+                        if !buildFile.nil?
+                            # we're done
+                            puts "\t .Added as part of source-build-phase successfully."
+                        else
+                            # we failed
+                            # thus we don't save project
+                            puts "\t .Failed to add as part of source-build-phase"
+
+                            # exit immediately
+                            exit
+                        end
+                    end
+                end
+                
+                # save the project
+                project.save
+            else
+                # we failed
+                # thus we don't save the proejct
+                puts "Failed to add '#{filePath}'"
+
+                # exit immediately
+                exit
+            end
+
+            break
+        end
+    end
+
 else
     puts "#{command} command not recognized."
 end
